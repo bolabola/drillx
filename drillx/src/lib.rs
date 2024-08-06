@@ -34,3 +34,33 @@ pub fn hash(challenge: &[u8; 32], nonce: &[u8; 8]) -> [u8; 32] {
     println!("hash in {} nanos\n", timer.elapsed().as_nanos());
     x
 }
+/// A drillx solution which can be efficiently validated on-chain
+#[derive(Clone, Copy, Debug, serde::Serialize, serde::Deserialize)]
+pub struct Solution {
+    pub d: [u8; 16], // digest
+    pub n: [u8; 8],  // nonce
+}
+
+impl Solution {
+    /// Builds a new verifiable solution from a hash and nonce
+    pub fn new(digest: [u8; 16], nonce: [u8; 8]) -> Solution {
+        Solution {
+            d: digest,
+            n: nonce,
+        }
+    }
+
+    /// Returns true if the solution is valid
+    pub fn is_valid(&self, challenge: &[u8; 32]) -> bool {
+        is_valid_digest(challenge, &self.n, &self.d)
+    }
+
+    /// Calculates the result hash for a given solution
+    pub fn to_hash(&self) -> Hash {
+        let mut d = self.d;
+        Hash {
+            d: self.d,
+            h: hashv(&mut d, &self.n),
+        }
+    }
+}
